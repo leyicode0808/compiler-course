@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ast.h"
+#include "semantic.h"
 
 extern int yylex(void);
 extern int yylineno;
@@ -60,9 +61,11 @@ program
     : function_list
       {
           root = new_node("Program", NULL);
-          add_child(root, $1);
-          ast_print(root, 0);
-          ast_free(root);
+	  add_child(root, $1);
+	  if (semantic_analyze(root) == 0) {
+    		ast_print(root, 0);
+		}
+	  ast_free(root);
       }
     ;
 
