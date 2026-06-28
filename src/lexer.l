@@ -97,6 +97,8 @@ FLOAT_CONST  {FLOAT_SIMPLE}|{FLOAT_EXP_A}|{FLOAT_EXP_B}
 
 "("                     { return LP; }
 ")"                     { return RP; }
+"["                     { return LB; }
+"]"                     { return RB; }
 "{"                     { return LC; }
 "}"                     { return RC; }
 

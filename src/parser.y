@@ -13,7 +13,7 @@ void yyerror(const char *msg);
 %token RETURN
 %token ID
 %token INT
-%token LP RP LC RC SEMI COMMA
+%token LP RP LB RB LC RC SEMI COMMA
 %token ASSIGNOP
 %token PLUS MINUS STAR DIV
 %token IF ELSE WHILE
@@ -60,24 +60,33 @@ declaration
     ;
 
 declarator_list
-    : ID
-    | declarator_list COMMA ID
+    : declarator
+    | declarator_list COMMA declarator
     ;
 
+declarator
+    : ID
+    | ID LB INT RB
+    ;
 stmt
     : SEMI
     | expr SEMI
     | RETURN expr SEMI
-    | ID ASSIGNOP expr SEMI
+    | lvalue ASSIGNOP expr SEMI
     | compound_stmt
     | IF LP expr RP stmt %prec LOWER_THAN_ELSE
     | IF LP expr RP stmt ELSE stmt
     | WHILE LP expr RP stmt
     ;
 
+lvalue
+    : ID
+    | ID LB expr RB
+    ;
+
 expr
     : INT
-    | ID
+    | lvalue
     | expr OR expr
     | expr AND expr
     | NOT expr
