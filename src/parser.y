@@ -29,18 +29,31 @@ function
     ;
 
 compound_stmt
-    : LC stmt_list RC
+    : LC block_items RC
     ;
 
-stmt_list
-    : stmt
-    | stmt_list stmt
+block_items
+    : /* empty */
+    | block_items block_item
+    ;
+
+block_item
+    : declaration
+    | stmt
+    ;
+
+declaration
+    : TYPE ID SEMI
     ;
 
 stmt
-    : RETURN INT SEMI
+    : RETURN expr SEMI
     ;
 
+expr
+    : INT
+    | ID
+    ;
 %%
 
 void yyerror(const char *msg) {
