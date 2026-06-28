@@ -1,0 +1,14 @@
+int add(int x, int y) {
+    return x + y;
+}
+
+int add(int z) {
+    return z;
+}
+
+int main() {
+    int a;
+    a = add(1);
+    a = missing(1, 2);
+    return a;
+}
