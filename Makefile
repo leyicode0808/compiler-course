@@ -45,6 +45,7 @@ test: parser
 	./$(PARSER_BIN) tests/test_control.cmm
 	./$(PARSER_BIN) tests/test_ast_full.cmm
 	-./$(PARSER_BIN) tests/test_minimal_error.cmm
+	./$(PARSER_BIN) tests/test_semantic_var_error.cmm
 
 clean:
 	rm -f $(BUILD_DIR)/lex.yy.c
