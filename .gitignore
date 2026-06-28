@@ -4,5 +4,6 @@ day1-flex/lexer
 *.o
 *.out
 # Temporary AST attempt backups
-backups/*.ast_attempt
+
+backups/*ast_attempt*
 backups/parser.ast_minimal.y
