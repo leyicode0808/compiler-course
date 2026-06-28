@@ -1,0 +1,5 @@
+build/
+day1-flex/lex.yy.c
+day1-flex/lexer
+*.o
+*.out
