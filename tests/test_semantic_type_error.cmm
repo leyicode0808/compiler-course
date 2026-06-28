@@ -1,0 +1,14 @@
+int f() {
+    return 1.2;
+}
+
+int main() {
+    int a;
+    float b;
+
+    a = 1.2;
+    b = 1;
+
+    return b;
+}
+
