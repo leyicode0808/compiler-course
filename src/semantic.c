@@ -13,6 +13,7 @@ typedef struct Symbol {
 typedef struct FunctionSymbol {
     char *name;
     char *return_type;
+    char **param_types;
     int line;
     int param_count;
     struct FunctionSymbol *next;
@@ -97,16 +98,25 @@ static void add_symbol(const char *name, const char *type, int line) {
 static void add_function(const char *name,
                          const char *return_type,
                          int line,
-                         int param_count) {
+                         int param_count,
+                         char **param_types)  {
     FunctionSymbol *function;
 
     if (find_function(name) != NULL) {
-        fprintf(stderr,
-                "Semantic error at line %d: redefined function: %s\n",
-                line, name);
-        error_count++;
-        return;
+    int i;
+
+    fprintf(stderr,
+            "Semantic error at line %d: redefined function: %s\n",
+            line, name);
+    error_count++;
+
+    for (i = 0; i < param_count; i++) {
+        free(param_types[i]);
     }
+    free(param_types);
+
+    return;
+}
 
     function = malloc(sizeof(FunctionSymbol));
     if (function == NULL) {
@@ -118,6 +128,7 @@ static void add_function(const char *name,
     function->return_type = copy_string(return_type);
     function->line = line;
     function->param_count = param_count;
+    function->param_types = param_types;
     function->next = functions;
     functions = function;
 }
@@ -150,9 +161,18 @@ static void clear_functions(void) {
 
     while (function != NULL) {
         FunctionSymbol *next = function->next;
-        free(function->name);
-        free(function->return_type);
-        free(function);
+        
+        
+        int i;
+	free(function->name);
+	free(function->return_type);
+	for (i = 0; i < function->param_count; i++) {
+    		free(function->param_types[i]);
+	}
+	free(function->param_types);
+	free(function);
+        
+        
         function = next;
     }
 
@@ -194,6 +214,33 @@ static ASTNode *find_child(ASTNode *node, const char *name) {
     return NULL;
 }
 
+static char **collect_param_types(ASTNode *params, int param_count) {
+    char **types;
+    ASTNode *param;
+    int i = 0;
+
+    if (param_count == 0) {
+        return NULL;
+    }
+
+    types = malloc(sizeof(char *) * param_count);
+    if (types == NULL) {
+        fprintf(stderr, "fatal: out of memory\n");
+        exit(1);
+    }
+
+    param = params != NULL ? params->first_child : NULL;
+    while (param != NULL) {
+        ASTNode *type_node = find_child(param, "Type");
+        types[i] = copy_string(type_node != NULL ? type_node->value : "int");
+        i++;
+        param = param->next_sibling;
+    }
+
+    return types;
+}
+
+
 static void collect_functions(ASTNode *node) {
     ASTNode *child;
 
@@ -204,10 +251,17 @@ static void collect_functions(ASTNode *node) {
     if (is_node(node, "Function")) {
         ASTNode *return_type = find_child(node, "ReturnType");
         ASTNode *params = find_child(node, "Params");
-        add_function(node->value,
-                     return_type != NULL ? return_type->value : "int",
-                     node->line,
-                     count_children(params));
+        
+        
+        int param_count = count_children(params);
+	char **param_types = collect_param_types(params, param_count);
+	add_function(node->value,
+             return_type != NULL ? return_type->value : "int",
+             node->line,
+             param_count,
+             param_types);
+                     
+                     
         return;
     }
 
@@ -384,12 +438,40 @@ static void check_call(ASTNode *node) {
     args = find_child(node, "Args");
     arg_count = count_children(args);
 
+
+
+
     if (arg_count != function->param_count) {
-        fprintf(stderr,
-                "Semantic error at line %d: argument count mismatch in call to %s\n",
-                node->line, node->value);
-        error_count++;
+    fprintf(stderr,
+            "Semantic error at line %d: argument count mismatch in call to %s\n",
+            node->line, node->value);
+    error_count++;
+} else {
+    ASTNode *arg = args != NULL ? args->first_child : NULL;
+    int i = 0;
+
+    while (arg != NULL) {
+        const char *actual_type = expression_type(arg);
+        const char *expected_type = function->param_types[i];
+
+        if (!type_assignable(expected_type, actual_type)) {
+            fprintf(stderr,
+                    "Semantic error at line %d: argument type mismatch in call to %s\n",
+                    node->line, node->value);
+            error_count++;
+            break;
+        }
+
+        i++;
+        arg = arg->next_sibling;
     }
+}
+    
+    
+    
+    
+    
+    
 }
 
 static void check_uses(ASTNode *node) {
@@ -399,9 +481,26 @@ static void check_uses(ASTNode *node) {
         return;
     }
 
+
+
     if (is_node(node, "Var") || is_node(node, "ArrayAccess")) {
-        check_symbol_used(node->value, node->line);
+    check_symbol_used(node->value, node->line);
+
+    if (is_node(node, "ArrayAccess")) {
+        ASTNode *index = node->first_child;
+        const char *index_type = expression_type(index);
+
+        if (index_type != NULL && strcmp(index_type, "int") != 0) {
+            fprintf(stderr,
+                    "Semantic error at line %d: array index must be int\n",
+                    node->line);
+            error_count++;
+        }
     }
+}
+
+
+
 
     if (is_node(node, "Call")) {
         check_call(node);

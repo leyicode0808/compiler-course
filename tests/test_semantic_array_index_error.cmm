@@ -1,0 +1,9 @@
+int main() {
+    int arr[10];
+    float f;
+
+    f = 1.2;
+    arr[f] = 1;
+
+    return arr[0];
+}

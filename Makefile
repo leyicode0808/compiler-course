@@ -48,7 +48,8 @@ test: parser
 	./$(PARSER_BIN) tests/test_semantic_var_error.cmm
 	./$(PARSER_BIN) tests/test_semantic_func_error.cmm
 	./$(PARSER_BIN) tests/test_semantic_type_error.cmm
-	
+	./$(PARSER_BIN) tests/test_semantic_arg_type_error.cmm
+	./$(PARSER_BIN) tests/test_semantic_array_index_error.cmm
 clean:
 	rm -f $(BUILD_DIR)/lex.yy.c
 	rm -f $(BUILD_DIR)/parser.tab.c

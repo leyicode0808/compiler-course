@@ -1,0 +1,13 @@
+int add(int x, int y) {
+    return x + y;
+}
+
+int main() {
+    float f;
+    int a;
+
+    f = 1.2;
+    a = add(f, 2);
+
+    return a;
+}
