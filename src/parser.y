@@ -18,9 +18,13 @@ void yyerror(const char *msg);
 %token PLUS MINUS STAR DIV
 %token IF ELSE WHILE
 %token RELOP
+%token AND OR NOT
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
+%left OR
+%left AND
+%right NOT
 %left RELOP
 %left PLUS MINUS
 %left STAR DIV
@@ -74,6 +78,9 @@ stmt
 expr
     : INT
     | ID
+    | expr OR expr
+    | expr AND expr
+    | NOT expr
     | expr RELOP expr
     | expr PLUS expr
     | expr MINUS expr
