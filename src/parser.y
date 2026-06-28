@@ -61,7 +61,9 @@ declarator_list
     ;
 
 stmt
-    : RETURN expr SEMI
+    : SEMI
+    | expr SEMI
+    | RETURN expr SEMI
     | ID ASSIGNOP expr SEMI
     | compound_stmt
     | IF LP expr RP stmt %prec LOWER_THAN_ELSE
