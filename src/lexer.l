@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
+static int comment_start_line = 0;
+
 static void print_token(const char *token, const char *lexeme) {
     printf("Line %-3d %-10s %s\n", yylineno, token, lexeme);
 }
@@ -12,19 +14,25 @@ static void print_error(const char *message, const char *lexeme) {
     fprintf(stderr, "Lexical error at line %d: %s: %s\n",
             yylineno, message, lexeme);
 }
+
+static void print_error_at_line(int line, const char *message, const char *lexeme) {
+    fprintf(stderr, "Lexical error at line %d: %s: %s\n",
+            line, message, lexeme);
+}
 %}
 
 %x COMMENT
 
-DIGIT       [0-9]
-LETTER      [A-Za-z_]
-ID          {LETTER}({LETTER}|{DIGIT})*
+DIGIT        [0-9]
+LETTER       [A-Za-z_]
+ID           {LETTER}({LETTER}|{DIGIT})*
 
-HEX_DIGIT   [0-9A-Fa-f]
-DEC_INT     0|[1-9]{DIGIT}*
-OCT_INT     0[0-7]+
-HEX_INT     0[xX]{HEX_DIGIT}+
-BAD_OCT     0[0-7]*[89]{DIGIT}*
+HEX_DIGIT    [0-9A-Fa-f]
+DEC_INT      0|[1-9]{DIGIT}*
+OCT_INT      0[0-7]+
+HEX_INT      0[xX]{HEX_DIGIT}+
+BAD_HEX      0[xX][0-9A-Za-z_]*
+BAD_OCT      0[0-7]*[89]{DIGIT}*
 
 EXP          [eE][+-]?{DIGIT}+
 FLOAT_SIMPLE {DIGIT}+"."{DIGIT}+
@@ -36,12 +44,16 @@ FLOAT_CONST  {FLOAT_SIMPLE}|{FLOAT_EXP_A}|{FLOAT_EXP_B}
 
 "//".*                  { /* skip single-line comment */ }
 
-"/*"                    { BEGIN(COMMENT); }
+"/*"                    {
+                            comment_start_line = yylineno;
+                            BEGIN(COMMENT);
+                        }
 <COMMENT>"*/"           { BEGIN(INITIAL); }
 <COMMENT>\n             { /* yylineno is updated by flex */ }
 <COMMENT>.              { /* skip comment body */ }
 <COMMENT><<EOF>>        {
-                            print_error("unterminated block comment", "/*");
+                            print_error_at_line(comment_start_line,
+                                                "unterminated block comment", "/*");
                             return 0;
                         }
 
@@ -57,6 +69,7 @@ FLOAT_CONST  {FLOAT_SIMPLE}|{FLOAT_EXP_A}|{FLOAT_EXP_B}
 {BAD_OCT}               { print_error("invalid octal integer", yytext); }
 {FLOAT_CONST}           { print_token("FLOAT", yytext); }
 {HEX_INT}               { print_token("INT", yytext); }
+{BAD_HEX}               { print_error("invalid hexadecimal integer", yytext); }
 {OCT_INT}               { print_token("INT", yytext); }
 {DEC_INT}               { print_token("INT", yytext); }
 
@@ -70,11 +83,12 @@ FLOAT_CONST  {FLOAT_SIMPLE}|{FLOAT_EXP_A}|{FLOAT_EXP_B}
 
 ";"                     { print_token("SEMI", yytext); }
 ","                     { print_token("COMMA", yytext); }
-"="                     { print_token("ASSIGNOP", yytext); }
 
 ">="|"<="|"=="|"!="|">"|"<" {
                             print_token("RELOP", yytext);
                         }
+
+"="                     { print_token("ASSIGNOP", yytext); }
 
 "+"                     { print_token("PLUS", yytext); }
 "-"                     { print_token("MINUS", yytext); }
