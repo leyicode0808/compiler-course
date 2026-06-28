@@ -42,10 +42,26 @@ function_list
     | function_list function
     ;
 
+
 function
-    : TYPE ID LP RP compound_stmt
+    : TYPE ID LP param_list_opt RP compound_stmt
     ;
 
+param_list_opt
+    : /* empty */
+    | param_list
+    ;
+
+param_list
+    : param
+    | param_list COMMA param
+    ;
+
+param
+    : TYPE ID
+    ;
+    
+    
 compound_stmt
     : LC block_items RC
     ;
@@ -92,7 +108,7 @@ lvalue
 expr
     : INT
     | lvalue
-    | ID LP RP
+    | ID LP arg_list_opt RP
     | expr OR expr
     | expr AND expr
     | NOT expr
@@ -102,6 +118,16 @@ expr
     | expr STAR expr
     | expr DIV expr
     | LP expr RP
+    ;
+    
+arg_list_opt
+    : /* empty */
+    | arg_list
+    ;
+
+arg_list
+    : expr
+    | arg_list COMMA expr
     ;
 %%
 
