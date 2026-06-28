@@ -31,10 +31,15 @@ void yyerror(const char *msg);
 
 %%
 program
-    : function
+    : function_list
       {
           printf("Syntax OK\n");
       }
+    ;
+
+function_list
+    : function
+    | function_list function
     ;
 
 function
@@ -87,6 +92,7 @@ lvalue
 expr
     : INT
     | lvalue
+    | ID LP RP
     | expr OR expr
     | expr AND expr
     | NOT expr
