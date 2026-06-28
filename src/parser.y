@@ -14,9 +14,13 @@ void yyerror(const char *msg);
 %token ID
 %token INT
 %token LP RP LC RC SEMI
+%token ASSIGNOP
+%token PLUS MINUS STAR DIV
+
+%left PLUS MINUS
+%left STAR DIV
 
 %%
-
 program
     : function
       {
@@ -48,11 +52,17 @@ declaration
 
 stmt
     : RETURN expr SEMI
+    | ID ASSIGNOP expr SEMI
     ;
 
 expr
     : INT
     | ID
+    | expr PLUS expr
+    | expr MINUS expr
+    | expr STAR expr
+    | expr DIV expr
+    | LP expr RP
     ;
 %%
 

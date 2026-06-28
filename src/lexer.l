@@ -75,6 +75,14 @@ FLOAT_CONST  {FLOAT_SIMPLE}|{FLOAT_EXP_A}|{FLOAT_EXP_B}
                         }
 
 ";"                     { return SEMI; }
+
+"="                     { return ASSIGNOP; }
+
+"+"                     { return PLUS; }
+"-"                     { return MINUS; }
+"*"                     { return STAR; }
+"/"                     { return DIV; }
+
 "("                     { return LP; }
 ")"                     { return RP; }
 "{"                     { return LC; }
