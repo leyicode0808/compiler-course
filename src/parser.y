@@ -12,7 +12,7 @@ void yyerror(const char *msg);
 %token TYPE
 %token RETURN
 %token ID
-%token INT
+%token INT FLOAT
 %token LP RP LB RB LC RC SEMI COMMA
 %token ASSIGNOP
 %token PLUS MINUS STAR DIV
@@ -107,6 +107,7 @@ lvalue
 
 expr
     : INT
+    | FLOAT
     | lvalue
     | ID LP arg_list_opt RP
     | expr OR expr

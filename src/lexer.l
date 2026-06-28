@@ -63,7 +63,7 @@ FLOAT_CONST  {FLOAT_SIMPLE}|{FLOAT_EXP_A}|{FLOAT_EXP_B}
 "while"                 { return WHILE; }
 
 {BAD_OCT}               { print_error("invalid octal integer", yytext); }
-{FLOAT_CONST}           { print_error("float literal is not supported in minimal parser", yytext); }
+{FLOAT_CONST}           { return FLOAT; }
 {HEX_INT}               { return INT; }
 {BAD_HEX}               { print_error("invalid hexadecimal integer", yytext); }
 {OCT_INT}               { return INT; }
