@@ -1,30 +1,42 @@
 CC = gcc
 FLEX = flex
+BISON = bison
 
 SRC_DIR = src
 BUILD_DIR = build
-TEST_DIR = tests
 
 LEXER_SRC = $(SRC_DIR)/lexer.l
+PARSER_SRC = $(SRC_DIR)/parser.y
+
 LEXER_C = $(BUILD_DIR)/lex.yy.c
-LEXER_BIN = $(BUILD_DIR)/lexer
+PARSER_C = $(BUILD_DIR)/parser.tab.c
+PARSER_H = $(BUILD_DIR)/parser.tab.h
 
-.PHONY: all test clean
+PARSER_BIN = $(BUILD_DIR)/parser
 
-all: $(LEXER_BIN)
+.PHONY: all parser test clean
+
+all: parser
+
+parser: $(PARSER_BIN)
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-$(LEXER_C): $(LEXER_SRC) | $(BUILD_DIR)
+$(PARSER_C) $(PARSER_H): $(PARSER_SRC) | $(BUILD_DIR)
+	$(BISON) -d -o $(PARSER_C) $(PARSER_SRC)
+
+$(LEXER_C): $(LEXER_SRC) $(PARSER_H) | $(BUILD_DIR)
 	$(FLEX) -o $(LEXER_C) $(LEXER_SRC)
 
-$(LEXER_BIN): $(LEXER_C)
-	$(CC) $(LEXER_C) -o $(LEXER_BIN)
+$(PARSER_BIN): $(PARSER_C) $(LEXER_C)
+	$(CC) -I$(BUILD_DIR) $(PARSER_C) $(LEXER_C) -o $(PARSER_BIN)
 
-test: all
-	echo "int main() { return 123; }" | ./$(LEXER_BIN)
-	echo "float x; if (x >= 10) return x;" | ./$(LEXER_BIN)
+test: parser
+	./$(PARSER_BIN) tests/test_minimal.cmm
 
 clean:
-	rm -f $(LEXER_C) $(LEXER_BIN)
+	rm -f $(BUILD_DIR)/lex.yy.c
+	rm -f $(BUILD_DIR)/parser.tab.c
+	rm -f $(BUILD_DIR)/parser.tab.h
+	rm -f $(BUILD_DIR)/parser
