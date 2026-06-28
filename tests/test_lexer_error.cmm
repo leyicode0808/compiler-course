@@ -1,0 +1,8 @@
+int main() {
+    int a;
+    a = 089;
+    float b;
+    b = 1e2;
+    @
+    /* unterminated comment
+}
