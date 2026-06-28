@@ -16,7 +16,12 @@ void yyerror(const char *msg);
 %token LP RP LC RC SEMI
 %token ASSIGNOP
 %token PLUS MINUS STAR DIV
+%token IF ELSE WHILE
+%token RELOP
 
+%nonassoc LOWER_THAN_ELSE
+%nonassoc ELSE
+%left RELOP
 %left PLUS MINUS
 %left STAR DIV
 
@@ -53,11 +58,16 @@ declaration
 stmt
     : RETURN expr SEMI
     | ID ASSIGNOP expr SEMI
+    | compound_stmt
+    | IF LP expr RP stmt %prec LOWER_THAN_ELSE
+    | IF LP expr RP stmt ELSE stmt
+    | WHILE LP expr RP stmt
     ;
 
 expr
     : INT
     | ID
+    | expr RELOP expr
     | expr PLUS expr
     | expr MINUS expr
     | expr STAR expr

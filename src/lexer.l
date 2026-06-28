@@ -58,6 +58,9 @@ FLOAT_CONST  {FLOAT_SIMPLE}|{FLOAT_EXP_A}|{FLOAT_EXP_B}
 
 "int"|"float"           { return TYPE; }
 "return"                { return RETURN; }
+"if"                    { return IF; }
+"else"                  { return ELSE; }
+"while"                 { return WHILE; }
 
 {BAD_OCT}               { print_error("invalid octal integer", yytext); }
 {FLOAT_CONST}           { print_error("float literal is not supported in minimal parser", yytext); }
@@ -75,6 +78,10 @@ FLOAT_CONST  {FLOAT_SIMPLE}|{FLOAT_EXP_A}|{FLOAT_EXP_B}
                         }
 
 ";"                     { return SEMI; }
+
+">="|"<="|"=="|"!="|">"|"<" {
+                            return RELOP;
+                        }
 
 "="                     { return ASSIGNOP; }
 
