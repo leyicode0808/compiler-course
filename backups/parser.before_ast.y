@@ -1,11 +1,6 @@
-%code requires {
-#include "ast.h"
-}
-
 %{
 #include <stdio.h>
 #include <stdlib.h>
-#include "ast.h"
 
 extern int yylex(void);
 extern int yylineno;
@@ -14,16 +9,14 @@ extern FILE *yyin;
 void yyerror(const char *msg);
 %}
 
-%union {
-    char *text;
-    ASTNode *node;
-}
-
-%token <text> TYPE ID INT FLOAT
-%token RETURN IF ELSE WHILE
+%token TYPE
+%token RETURN
+%token ID
+%token INT FLOAT
 %token LP RP LB RB LC RC SEMI COMMA
 %token ASSIGNOP
 %token PLUS MINUS STAR DIV
+%token IF ELSE WHILE
 %token RELOP
 %token AND OR NOT
 
@@ -37,7 +30,6 @@ void yyerror(const char *msg);
 %left STAR DIV
 
 %%
-
 program
     : function_list
       {
@@ -50,12 +42,9 @@ function_list
     | function_list function
     ;
 
+
 function
     : TYPE ID LP param_list_opt RP compound_stmt
-      {
-          free($1);
-          free($2);
-      }
     ;
 
 param_list_opt
@@ -70,12 +59,9 @@ param_list
 
 param
     : TYPE ID
-      {
-          free($1);
-          free($2);
-      }
     ;
-
+    
+    
 compound_stmt
     : LC block_items RC
     ;
@@ -92,9 +78,6 @@ block_item
 
 declaration
     : TYPE declarator_list SEMI
-      {
-          free($1);
-      }
     ;
 
 declarator_list
@@ -104,16 +87,8 @@ declarator_list
 
 declarator
     : ID
-      {
-          free($1);
-      }
     | ID LB INT RB
-      {
-          free($1);
-          free($3);
-      }
     ;
-
 stmt
     : SEMI
     | expr SEMI
@@ -127,29 +102,14 @@ stmt
 
 lvalue
     : ID
-      {
-          free($1);
-      }
     | ID LB expr RB
-      {
-          free($1);
-      }
     ;
 
 expr
     : INT
-      {
-          free($1);
-      }
     | FLOAT
-      {
-          free($1);
-      }
     | lvalue
     | ID LP arg_list_opt RP
-      {
-          free($1);
-      }
     | expr OR expr
     | expr AND expr
     | NOT expr
@@ -160,7 +120,7 @@ expr
     | expr DIV expr
     | LP expr RP
     ;
-
+    
 arg_list_opt
     : /* empty */
     | arg_list
@@ -170,7 +130,6 @@ arg_list
     : expr
     | arg_list COMMA expr
     ;
-
 %%
 
 void yyerror(const char *msg) {

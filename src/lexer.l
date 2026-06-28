@@ -2,6 +2,7 @@
 
 %{
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "parser.tab.h"
 
@@ -56,23 +57,22 @@ FLOAT_CONST  {FLOAT_SIMPLE}|{FLOAT_EXP_A}|{FLOAT_EXP_B}
 
 [ \t\r\n]+              { /* skip whitespace */ }
 
-"int"|"float"           { return TYPE; }
+"int"|"float"           { yylval.text = strdup(yytext); return TYPE; }
 "return"                { return RETURN; }
 "if"                    { return IF; }
 "else"                  { return ELSE; }
 "while"                 { return WHILE; }
 
-{BAD_OCT}               { print_error("invalid octal integer", yytext); }
-{FLOAT_CONST}           { return FLOAT; }
-{HEX_INT}               { return INT; }
-{BAD_HEX}               { print_error("invalid hexadecimal integer", yytext); }
-{OCT_INT}               { return INT; }
-{DEC_INT}               { return INT; }
+{FLOAT_CONST}           { yylval.text = strdup(yytext); return FLOAT; }
+{HEX_INT}               { yylval.text = strdup(yytext); return INT; }
+{OCT_INT}               { yylval.text = strdup(yytext); return INT; }
+{DEC_INT}               { yylval.text = strdup(yytext); return INT; }
 
 {ID_PATTERN}            {
                             if (strlen(yytext) > 32) {
                                 print_error("identifier length exceeds 32", yytext);
                             } else {
+                                yylval.text = strdup(yytext);
                                 return ID;
                             }
                         }
