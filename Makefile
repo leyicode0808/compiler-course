@@ -37,6 +37,12 @@ $(PARSER_BIN): $(PARSER_C) $(LEXER_C) $(AST_C) $(AST_H)
 test: parser
 	./$(PARSER_BIN) tests/test_minimal.cmm
 	./$(PARSER_BIN) tests/test_float.cmm
+	./$(PARSER_BIN) tests/test_function_params.cmm
+	./$(PARSER_BIN) tests/test_array.cmm
+	./$(PARSER_BIN) tests/test_logic_expr.cmm
+	./$(PARSER_BIN) tests/test_control.cmm
+	./$(PARSER_BIN) tests/test_ast_full.cmm
+	-./$(PARSER_BIN) tests/test_minimal_error.cmm
 
 clean:
 	rm -f $(BUILD_DIR)/lex.yy.c
