@@ -78,6 +78,7 @@ FLOAT_CONST  {FLOAT_SIMPLE}|{FLOAT_EXP_A}|{FLOAT_EXP_B}
                         }
 
 ";"                     { return SEMI; }
+","                     { return COMMA; }
 
 ">="|"<="|"=="|"!="|">"|"<" {
                             return RELOP;

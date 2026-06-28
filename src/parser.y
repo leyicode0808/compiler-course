@@ -13,7 +13,7 @@ void yyerror(const char *msg);
 %token RETURN
 %token ID
 %token INT
-%token LP RP LC RC SEMI
+%token LP RP LC RC SEMI COMMA
 %token ASSIGNOP
 %token PLUS MINUS STAR DIV
 %token IF ELSE WHILE
@@ -52,7 +52,12 @@ block_item
     ;
 
 declaration
-    : TYPE ID SEMI
+    : TYPE declarator_list SEMI
+    ;
+
+declarator_list
+    : ID
+    | declarator_list COMMA ID
     ;
 
 stmt
