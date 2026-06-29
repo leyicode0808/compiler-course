@@ -4,6 +4,7 @@
 #include "ir.h"
 
 static int temp_count = 1;
+static int label_count = 1;
 
 static int is_node(ASTNode *node, const char *name) {
     return node != NULL && node->name != NULL && strcmp(node->name, name) == 0;
@@ -31,6 +32,15 @@ static char *new_temp(void) {
 
     snprintf(buffer, sizeof(buffer), "t%d", temp_count);
     temp_count++;
+
+    return copy_string(buffer);
+}
+
+static char *new_label(void) {
+    char buffer[32];
+
+    snprintf(buffer, sizeof(buffer), "label%d", label_count);
+    label_count++;
 
     return copy_string(buffer);
 }
@@ -122,7 +132,9 @@ if (is_node(node, "Call")) {
 
 
 
-
+if (is_node(node, "Relop")) {
+    return gen_binary(node, node->value);
+}
     if (is_node(node, "Add")) {
         return gen_binary(node, "+");
     }
@@ -159,6 +171,61 @@ static void gen_declaration(ASTNode *node) {
         decl = decl->next_sibling;
     }
 }
+
+
+static void gen_cond(ASTNode *node, const char *true_label, const char *false_label) {
+    if (node == NULL) {
+        printf("GOTO %s\n", false_label);
+        return;
+    }
+
+    if (is_node(node, "Relop")) {
+        char *left = gen_expr(node->first_child);
+        char *right = gen_expr(node->first_child->next_sibling);
+
+        printf("IF %s %s %s GOTO %s\n", left, node->value, right, true_label);
+        printf("GOTO %s\n", false_label);
+
+        free(left);
+        free(right);
+        return;
+    }
+    if (is_node(node, "And")) {
+    char *label_mid = new_label();
+
+    gen_cond(node->first_child, label_mid, false_label);
+    printf("LABEL %s :\n", label_mid);
+    gen_cond(node->first_child->next_sibling, true_label, false_label);
+
+    free(label_mid);
+    return;
+}
+
+if (is_node(node, "Or")) {
+    char *label_mid = new_label();
+
+    gen_cond(node->first_child, true_label, label_mid);
+    printf("LABEL %s :\n", label_mid);
+    gen_cond(node->first_child->next_sibling, true_label, false_label);
+
+    free(label_mid);
+    return;
+}
+
+if (is_node(node, "Not")) {
+    gen_cond(node->first_child, false_label, true_label);
+    return;
+}
+
+
+    {
+        char *place = gen_expr(node);
+        printf("IF %s != #0 GOTO %s\n", place, true_label);
+        printf("GOTO %s\n", false_label);
+        free(place);
+    }
+}
+
 
 static void gen_stmt(ASTNode *node);
 
@@ -217,12 +284,77 @@ static void gen_stmt(ASTNode *node) {
         gen_block_items(find_child(node, "BlockItems"));
         return;
     }
+    
+    if (is_node(node, "If")) {
+    ASTNode *cond = node->first_child;
+    ASTNode *then_stmt = cond != NULL ? cond->next_sibling : NULL;
+    char *label_true = new_label();
+    char *label_false = new_label();
+
+    gen_cond(cond, label_true, label_false);
+
+    printf("LABEL %s :\n", label_true);
+    gen_stmt(then_stmt);
+    printf("LABEL %s :\n", label_false);
+
+    free(label_true);
+    free(label_false);
+    return;
+}
+
+if (is_node(node, "IfElse")) {
+    ASTNode *cond = node->first_child;
+    ASTNode *then_stmt = cond != NULL ? cond->next_sibling : NULL;
+    ASTNode *else_stmt = then_stmt != NULL ? then_stmt->next_sibling : NULL;
+    char *label_true = new_label();
+    char *label_false = new_label();
+    char *label_end = new_label();
+
+    gen_cond(cond, label_true, label_false);
+
+    printf("LABEL %s :\n", label_true);
+    gen_stmt(then_stmt);
+    printf("GOTO %s\n", label_end);
+
+    printf("LABEL %s :\n", label_false);
+    gen_stmt(else_stmt);
+
+    printf("LABEL %s :\n", label_end);
+
+    free(label_true);
+    free(label_false);
+    free(label_end);
+    return;
+}
+
+if (is_node(node, "While")) {
+    ASTNode *cond = node->first_child;
+    ASTNode *body = cond != NULL ? cond->next_sibling : NULL;
+    char *label_begin = new_label();
+    char *label_true = new_label();
+    char *label_false = new_label();
+
+    printf("LABEL %s :\n", label_begin);
+    gen_cond(cond, label_true, label_false);
+
+    printf("LABEL %s :\n", label_true);
+    gen_stmt(body);
+    printf("GOTO %s\n", label_begin);
+
+    printf("LABEL %s :\n", label_false);
+
+    free(label_begin);
+    free(label_true);
+    free(label_false);
+    return;
+}
 }
 
 static void gen_function(ASTNode *node) {
     ASTNode *compound;
 
     temp_count = 1;
+label_count = 1;
 
     printf("FUNCTION %s :\n", node->value);
 
