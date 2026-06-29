@@ -6,6 +6,8 @@
 typedef struct VarInfo {
     char *name;
     int offset;
+    int size;
+    int is_array;
     struct VarInfo *next;
 } VarInfo;
 
@@ -102,10 +104,42 @@ static void add_var(const char *name) {
 
     var->name = copy_string(name);
     var->offset = stack_offset;
+    var->size = 1;
+    var->is_array = 0;
     var->next = vars;
     vars = var;
 
     printf("    addi $sp, $sp, -4\n");
+}
+static void add_array(const char *name, int size) {
+    VarInfo *var;
+    int bytes;
+
+    if (find_var(name) != NULL) {
+        return;
+    }
+
+    if (size <= 0) {
+        size = 1;
+    }
+
+    bytes = size * 4;
+    stack_offset -= bytes;
+
+    var = malloc(sizeof(VarInfo));
+    if (var == NULL) {
+        fprintf(stderr, "fatal: out of memory\n");
+        exit(1);
+    }
+
+    var->name = copy_string(name);
+    var->offset = stack_offset;
+    var->size = size;
+    var->is_array = 1;
+    var->next = vars;
+    vars = var;
+
+    printf("    addi $sp, $sp, -%d\n", bytes);
 }
 
 static void gen_expr(ASTNode *node);
@@ -158,7 +192,22 @@ static void gen_expr(ASTNode *node) {
         }
         return;
     }
+    if (is_node(node, "ArrayAccess")) {
+        ASTNode *index = node->first_child;
 
+        var = find_var(node->value);
+        if (var == NULL) {
+            printf("    li $t0, 0\n");
+            return;
+        }
+
+        gen_expr(index);
+        printf("    sll $t0, $t0, 2\n");
+        printf("    addi $t1, $fp, %d\n", var->offset);
+        printf("    add $t1, $t1, $t0\n");
+        printf("    lw $t0, 0($t1)\n");
+        return;
+    }
     if (is_node(node, "Add")) {
         gen_binary(node, "+");
         return;
@@ -187,9 +236,15 @@ static void gen_declaration(ASTNode *node) {
     ASTNode *decl = decl_list != NULL ? decl_list->first_child : NULL;
 
     while (decl != NULL) {
+    
         if (is_node(decl, "VarDecl")) {
-            add_var(decl->value);
-        }
+    add_var(decl->value);
+} else if (is_node(decl, "ArrayDecl")) {
+    ASTNode *size = find_child(decl, "Size");
+    add_array(decl->value, size != NULL ? atoi(size->value) : 1);
+}
+
+
         decl = decl->next_sibling;
     }
 }
@@ -271,12 +326,34 @@ static void gen_stmt(ASTNode *node) {
         gen_expr(right);
 
         if (left != NULL && is_node(left, "Var")) {
-            var = find_var(left->value);
-            if (var != NULL) {
-                printf("    sw $t0, %d($fp)\n", var->offset);
-            }
-        }
-        return;
+    var = find_var(left->value);
+    if (var != NULL) {
+        printf("    sw $t0, %d($fp)\n", var->offset);
+    }
+    return;
+}
+
+if (left != NULL && is_node(left, "ArrayAccess")) {
+    ASTNode *index = left->first_child;
+
+    printf("    addi $sp, $sp, -4\n");
+    printf("    sw $t0, 0($sp)\n");
+
+    var = find_var(left->value);
+    if (var != NULL) {
+        gen_expr(index);
+        printf("    sll $t0, $t0, 2\n");
+        printf("    addi $t1, $fp, %d\n", var->offset);
+        printf("    add $t1, $t1, $t0\n");
+        printf("    lw $t2, 0($sp)\n");
+        printf("    sw $t2, 0($t1)\n");
+    }
+
+    printf("    addi $sp, $sp, 4\n");
+    return;
+}
+
+return;
     }
 
     if (is_node(node, "Return")) {
