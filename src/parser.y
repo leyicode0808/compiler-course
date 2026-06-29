@@ -9,6 +9,7 @@
 #include "semantic.h"
 #include "ir.h"
 #include "mips.h"
+#include "optimize.h"
 
 extern int yylex(void);
 extern int yylineno;
@@ -66,6 +67,7 @@ program
 	  add_child(root, $1);
 	  
 	  if (semantic_analyze(root) == 0) {
+    optimize_ast(root);
     ast_print(root, 0);
     ir_generate(root);
     mips_generate(root);
