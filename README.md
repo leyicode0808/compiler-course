@@ -1,7 +1,4 @@
-Compiler Course Project README 内容
-====================================
 
-以下内容可以直接复制到项目根目录的 README.md 中。
 
 
 # Compiler Course Project
