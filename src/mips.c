@@ -14,6 +14,7 @@ typedef struct VarInfo {
 static VarInfo *vars = NULL;
 static int stack_offset = 0;
 static int label_count = 1;
+static int current_function_is_main = 0;
 
 static int is_node(ASTNode *node, const char *name) {
     return node != NULL && node->name != NULL && strcmp(node->name, name) == 0;
@@ -141,6 +142,17 @@ static void add_array(const char *name, int size) {
 
     printf("    addi $sp, $sp, -%d\n", bytes);
 }
+static void add_param(const char *name, int index) {
+    VarInfo *var;
+    const char *arg_regs[] = {"$a0", "$a1", "$a2", "$a3"};
+
+    add_var(name);
+    var = find_var(name);
+
+    if (var != NULL && index >= 0 && index < 4) {
+        printf("    sw %s, %d($fp)\n", arg_regs[index], var->offset);
+    }
+}
 
 static void gen_expr(ASTNode *node);
 static void gen_cond(ASTNode *node, const char *true_label, const char *false_label);
@@ -208,6 +220,28 @@ static void gen_expr(ASTNode *node) {
         printf("    lw $t0, 0($t1)\n");
         return;
     }
+        if (is_node(node, "Call")) {
+        ASTNode *args = find_child(node, "Args");
+        ASTNode *arg = args != NULL ? args->first_child : NULL;
+        const char *arg_regs[] = {"$a0", "$a1", "$a2", "$a3"};
+        int index = 0;
+
+        while (arg != NULL && index < 4) {
+            gen_expr(arg);
+            printf("    move %s, $t0\n", arg_regs[index]);
+            index++;
+            arg = arg->next_sibling;
+        }
+
+        if (strcmp(node->value, "main") == 0) {
+    printf("    jal main\n");
+} else {
+    printf("    jal func_%s\n", node->value);
+}
+
+printf("    move $t0, $v0\n");
+        return;
+    }
     if (is_node(node, "Add")) {
         gen_binary(node, "+");
         return;
@@ -246,6 +280,24 @@ static void gen_declaration(ASTNode *node) {
 
 
         decl = decl->next_sibling;
+    }
+}
+
+static void gen_params(ASTNode *node) {
+    ASTNode *param;
+    int index = 0;
+
+    if (node == NULL) {
+        return;
+    }
+
+    param = node->first_child;
+    while (param != NULL) {
+        if (is_node(param, "Param")) {
+            add_param(param->value, index);
+            index++;
+        }
+        param = param->next_sibling;
     }
 }
 
@@ -357,16 +409,25 @@ return;
     }
 
     if (is_node(node, "Return")) {
-        ASTNode *expr = node->first_child;
+    ASTNode *expr = node->first_child;
 
-        gen_expr(expr);
+    gen_expr(expr);
+
+    if (current_function_is_main) {
         printf("    move $a0, $t0\n");
         printf("    li $v0, 1\n");
         printf("    syscall\n");
         printf("    li $v0, 10\n");
         printf("    syscall\n");
-        return;
+    } else {
+        printf("    move $v0, $t0\n");
+        printf("    lw $ra, -4($fp)\n");
+        printf("    move $sp, $fp\n");
+        printf("    jr $ra\n");
     }
+
+    return;
+}
 
     if (is_node(node, "Compound")) {
         gen_block_items(find_child(node, "BlockItems"));
@@ -434,12 +495,29 @@ return;
 }
 
 static void gen_function(ASTNode *node) {
+    ASTNode *params;
     ASTNode *compound;
 
     clear_vars();
 
-    printf("\n%s:\n", node->value);
-    printf("    move $fp, $sp\n");
+    current_function_is_main = strcmp(node->value, "main") == 0;
+
+    if (current_function_is_main) {
+    printf("\nmain:\n");
+} else {
+    printf("\nfunc_%s:\n", node->value);
+}
+
+printf("    move $fp, $sp\n");
+
+    if (!current_function_is_main) {
+        printf("    addi $sp, $sp, -4\n");
+        printf("    sw $ra, 0($sp)\n");
+        stack_offset = -4;
+    }
+
+    params = find_child(node, "Params");
+    gen_params(params);
 
     compound = find_child(node, "Compound");
     gen_block_items(find_child(compound, "BlockItems"));
