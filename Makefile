@@ -21,7 +21,7 @@ IR_H = $(SRC_DIR)/ir.h
 MIPS_C = $(SRC_DIR)/mips.c
 MIPS_H = $(SRC_DIR)/mips.h
 
-.PHONY: all parser test clean
+.PHONY: all parser test mips-test clean
 
 all: parser
 
@@ -57,6 +57,15 @@ test: parser
 	./$(PARSER_BIN) tests/test_semantic_type_error.cmm
 	./$(PARSER_BIN) tests/test_semantic_arg_type_error.cmm
 	./$(PARSER_BIN) tests/test_semantic_array_index_error.cmm
+	
+mips-test: parser
+	./$(PARSER_BIN) tests/test_ir_basic.cmm > $(BUILD_DIR)/output.txt
+	sed -n '/^\.data/,$$p' $(BUILD_DIR)/output.txt > $(BUILD_DIR)/test_ir_basic.s
+	spim -file $(BUILD_DIR)/test_ir_basic.s
+	./$(PARSER_BIN) tests/test_ir_control.cmm > $(BUILD_DIR)/output.txt
+	sed -n '/^\.data/,$$p' $(BUILD_DIR)/output.txt > $(BUILD_DIR)/test_ir_control.s
+	spim -file $(BUILD_DIR)/test_ir_control.s
+
 clean:
 	rm -f $(BUILD_DIR)/lex.yy.c
 	rm -f $(BUILD_DIR)/parser.tab.c
