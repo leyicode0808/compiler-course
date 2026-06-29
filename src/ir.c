@@ -87,6 +87,41 @@ static char *gen_expr(ASTNode *node) {
     if (is_node(node, "Var")) {
         return copy_string(node->value);
     }
+ 	
+ if (is_node(node, "Float")) {
+    snprintf(buffer, sizeof(buffer), "#%s", node->value);
+    return copy_string(buffer);
+}
+
+if (is_node(node, "ArrayAccess")) {
+    char *index = gen_expr(node->first_child);
+    char *place = new_temp();
+
+    printf("%s := %s[%s]\n", place, node->value, index);
+
+    free(index);
+    return place;
+}
+
+if (is_node(node, "Call")) {
+    ASTNode *args = find_child(node, "Args");
+    ASTNode *arg = args != NULL ? args->first_child : NULL;
+    char *place = new_temp();
+
+    while (arg != NULL) {
+        char *arg_place = gen_expr(arg);
+        printf("ARG %s\n", arg_place);
+        free(arg_place);
+        arg = arg->next_sibling;
+    }
+
+    printf("%s := CALL %s\n", place, node->value);
+    return place;
+}
+
+
+
+
 
     if (is_node(node, "Add")) {
         return gen_binary(node, "+");
@@ -116,8 +151,11 @@ static void gen_declaration(ASTNode *node) {
 
     while (decl != NULL) {
         if (is_node(decl, "VarDecl")) {
-            printf("DEC %s\n", decl->value);
-        }
+    printf("DEC %s\n", decl->value);
+} else if (is_node(decl, "ArrayDecl")) {
+    ASTNode *size = find_child(decl, "Size");
+    printf("DEC %s[%s]\n", decl->value, size != NULL ? size->value : "0");
+}
         decl = decl->next_sibling;
     }
 }
@@ -156,8 +194,12 @@ static void gen_stmt(ASTNode *node) {
         right = gen_expr(expr);
 
         if (left != NULL && is_node(left, "Var")) {
-            printf("%s := %s\n", left->value, right);
-        }
+    printf("%s := %s\n", left->value, right);
+} else if (left != NULL && is_node(left, "ArrayAccess")) {
+    char *index = gen_expr(left->first_child);
+    printf("%s[%s] := %s\n", left->value, index, right);
+    free(index);
+}
 
         free(right);
         return;
