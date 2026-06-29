@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include "ast.h"
 #include "semantic.h"
+#include "ir.h"
 
 extern int yylex(void);
 extern int yylineno;
@@ -62,9 +63,12 @@ program
       {
           root = new_node("Program", NULL);
 	  add_child(root, $1);
+	  
 	  if (semantic_analyze(root) == 0) {
-    		ast_print(root, 0);
+   		 ast_print(root, 0);
+   		 ir_generate(root);
 		}
+		
 	  ast_free(root);
       }
     ;

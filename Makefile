@@ -15,8 +15,9 @@ SEMANTIC_H = $(SRC_DIR)/semantic.h
 LEXER_C = $(BUILD_DIR)/lex.yy.c
 PARSER_C = $(BUILD_DIR)/parser.tab.c
 PARSER_H = $(BUILD_DIR)/parser.tab.h
-
 PARSER_BIN = $(BUILD_DIR)/parser
+IR_C = $(SRC_DIR)/ir.c
+IR_H = $(SRC_DIR)/ir.h
 
 .PHONY: all parser test clean
 
@@ -27,14 +28,14 @@ parser: $(PARSER_BIN)
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-$(PARSER_C) $(PARSER_H): $(PARSER_SRC) $(AST_H) $(SEMANTIC_H) | $(BUILD_DIR)
+$(PARSER_C) $(PARSER_H): $(PARSER_SRC) $(AST_H) $(SEMANTIC_H) $(IR_H) | $(BUILD_DIR)
 	$(BISON) -d -o $(PARSER_C) $(PARSER_SRC)
 
 $(LEXER_C): $(LEXER_SRC) $(PARSER_H) | $(BUILD_DIR)
 	$(FLEX) -o $(LEXER_C) $(LEXER_SRC)
 
-$(PARSER_BIN): $(PARSER_C) $(LEXER_C) $(AST_C) $(AST_H) $(SEMANTIC_C) $(SEMANTIC_H)
-	$(CC) -I$(BUILD_DIR) -I$(SRC_DIR) $(PARSER_C) $(LEXER_C) $(AST_C) $(SEMANTIC_C) -o $(PARSER_BIN)
+$(PARSER_BIN): $(PARSER_C) $(LEXER_C) $(AST_C) $(AST_H) $(SEMANTIC_C) $(SEMANTIC_H) $(IR_C) $(IR_H)
+	$(CC) -I$(BUILD_DIR) -I$(SRC_DIR) $(PARSER_C) $(LEXER_C) $(AST_C) $(SEMANTIC_C) $(IR_C) -o $(PARSER_BIN)
 
 test: parser
 	./$(PARSER_BIN) tests/test_minimal.cmm
@@ -44,6 +45,9 @@ test: parser
 	./$(PARSER_BIN) tests/test_logic_expr.cmm
 	./$(PARSER_BIN) tests/test_control.cmm
 	./$(PARSER_BIN) tests/test_ast_full.cmm
+	
+	./$(PARSER_BIN) tests/test_ir_basic.cmm
+	
 	-./$(PARSER_BIN) tests/test_minimal_error.cmm
 	./$(PARSER_BIN) tests/test_semantic_var_error.cmm
 	./$(PARSER_BIN) tests/test_semantic_func_error.cmm
