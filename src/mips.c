@@ -339,6 +339,32 @@ static void gen_cond(ASTNode *node, const char *true_label, const char *false_la
         printf("    j %s\n", false_label);
         return;
     }
+        if (is_node(node, "And")) {
+        char *label_mid = new_label();
+
+        gen_cond(node->first_child, label_mid, false_label);
+        printf("%s:\n", label_mid);
+        gen_cond(node->first_child->next_sibling, true_label, false_label);
+
+        free(label_mid);
+        return;
+    }
+
+    if (is_node(node, "Or")) {
+        char *label_mid = new_label();
+
+        gen_cond(node->first_child, true_label, label_mid);
+        printf("%s:\n", label_mid);
+        gen_cond(node->first_child->next_sibling, true_label, false_label);
+
+        free(label_mid);
+        return;
+    }
+
+    if (is_node(node, "Not")) {
+        gen_cond(node->first_child, false_label, true_label);
+        return;
+    }
 
     gen_expr(node);
     printf("    bne $t0, $zero, %s\n", true_label);

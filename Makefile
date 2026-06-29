@@ -71,6 +71,9 @@ mips-test: parser
 	./$(PARSER_BIN) tests/test_function_params.cmm > $(BUILD_DIR)/output.txt
 	sed -n '/^\.data/,$$p' $(BUILD_DIR)/output.txt > $(BUILD_DIR)/test_function_params.s
 	spim -file $(BUILD_DIR)/test_function_params.s
+	./$(PARSER_BIN) tests/test_logic_expr.cmm > $(BUILD_DIR)/output.txt
+	sed -n '/^\.data/,$$p' $(BUILD_DIR)/output.txt > $(BUILD_DIR)/test_logic_expr.s
+	spim -file $(BUILD_DIR)/test_logic_expr.s
 clean:
 	rm -f $(BUILD_DIR)/lex.yy.c
 	rm -f $(BUILD_DIR)/parser.tab.c
