@@ -18,6 +18,8 @@ PARSER_H = $(BUILD_DIR)/parser.tab.h
 PARSER_BIN = $(BUILD_DIR)/parser
 IR_C = $(SRC_DIR)/ir.c
 IR_H = $(SRC_DIR)/ir.h
+MIPS_C = $(SRC_DIR)/mips.c
+MIPS_H = $(SRC_DIR)/mips.h
 
 .PHONY: all parser test clean
 
@@ -28,14 +30,14 @@ parser: $(PARSER_BIN)
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-$(PARSER_C) $(PARSER_H): $(PARSER_SRC) $(AST_H) $(SEMANTIC_H) $(IR_H) | $(BUILD_DIR)
+$(PARSER_C) $(PARSER_H): $(PARSER_SRC) $(AST_H) $(SEMANTIC_H) $(IR_H) $(MIPS_H) | $(BUILD_DIR)
 	$(BISON) -d -o $(PARSER_C) $(PARSER_SRC)
 
 $(LEXER_C): $(LEXER_SRC) $(PARSER_H) | $(BUILD_DIR)
 	$(FLEX) -o $(LEXER_C) $(LEXER_SRC)
 
-$(PARSER_BIN): $(PARSER_C) $(LEXER_C) $(AST_C) $(AST_H) $(SEMANTIC_C) $(SEMANTIC_H) $(IR_C) $(IR_H)
-	$(CC) -I$(BUILD_DIR) -I$(SRC_DIR) $(PARSER_C) $(LEXER_C) $(AST_C) $(SEMANTIC_C) $(IR_C) -o $(PARSER_BIN)
+$(PARSER_BIN): $(PARSER_C) $(LEXER_C) $(AST_C) $(AST_H) $(SEMANTIC_C) $(SEMANTIC_H) $(IR_C) $(IR_H) $(MIPS_C) $(MIPS_H)
+	$(CC) -I$(BUILD_DIR) -I$(SRC_DIR) $(PARSER_C) $(LEXER_C) $(AST_C) $(SEMANTIC_C) $(IR_C) $(MIPS_C) -o $(PARSER_BIN)
 
 test: parser
 	./$(PARSER_BIN) tests/test_minimal.cmm
