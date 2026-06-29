@@ -11,6 +11,7 @@ typedef struct VarInfo {
 
 static VarInfo *vars = NULL;
 static int stack_offset = 0;
+static int label_count = 1;
 
 static int is_node(ASTNode *node, const char *name) {
     return node != NULL && node->name != NULL && strcmp(node->name, name) == 0;
@@ -46,6 +47,16 @@ static char *copy_string(const char *text) {
     strcpy(result, text);
     return result;
 }
+
+static char *new_label(void) {
+    char buffer[32];
+
+    snprintf(buffer, sizeof(buffer), "mips_label%d", label_count);
+    label_count++;
+
+    return copy_string(buffer);
+}
+
 
 static void clear_vars(void) {
     VarInfo *cur = vars;
@@ -98,6 +109,8 @@ static void add_var(const char *name) {
 }
 
 static void gen_expr(ASTNode *node);
+static void gen_cond(ASTNode *node, const char *true_label, const char *false_label);
+
 
 static void gen_binary(ASTNode *node, const char *op) {
     ASTNode *left = node->first_child;
@@ -181,6 +194,50 @@ static void gen_declaration(ASTNode *node) {
     }
 }
 
+static void gen_cond(ASTNode *node, const char *true_label, const char *false_label) {
+    ASTNode *left;
+    ASTNode *right;
+
+    if (node == NULL) {
+        printf("    j %s\n", false_label);
+        return;
+    }
+
+    if (is_node(node, "Relop")) {
+        left = node->first_child;
+        right = left != NULL ? left->next_sibling : NULL;
+
+        gen_expr(left);
+        printf("    addi $sp, $sp, -4\n");
+        printf("    sw $t0, 0($sp)\n");
+
+        gen_expr(right);
+        printf("    lw $t1, 0($sp)\n");
+        printf("    addi $sp, $sp, 4\n");
+
+        if (strcmp(node->value, ">") == 0) {
+            printf("    bgt $t1, $t0, %s\n", true_label);
+        } else if (strcmp(node->value, "<") == 0) {
+            printf("    blt $t1, $t0, %s\n", true_label);
+        } else if (strcmp(node->value, ">=") == 0) {
+            printf("    bge $t1, $t0, %s\n", true_label);
+        } else if (strcmp(node->value, "<=") == 0) {
+            printf("    ble $t1, $t0, %s\n", true_label);
+        } else if (strcmp(node->value, "==") == 0) {
+            printf("    beq $t1, $t0, %s\n", true_label);
+        } else if (strcmp(node->value, "!=") == 0) {
+            printf("    bne $t1, $t0, %s\n", true_label);
+        }
+
+        printf("    j %s\n", false_label);
+        return;
+    }
+
+    gen_expr(node);
+    printf("    bne $t0, $zero, %s\n", true_label);
+    printf("    j %s\n", false_label);
+}
+
 static void gen_stmt(ASTNode *node);
 
 static void gen_block_items(ASTNode *node) {
@@ -238,7 +295,64 @@ static void gen_stmt(ASTNode *node) {
         gen_block_items(find_child(node, "BlockItems"));
         return;
     }
+    if (is_node(node, "If")) {
+        ASTNode *cond = node->first_child;
+        ASTNode *then_stmt = cond != NULL ? cond->next_sibling : NULL;
+        char *label_true = new_label();
+        char *label_false = new_label();
 
+        gen_cond(cond, label_true, label_false);
+        printf("%s:\n", label_true);
+        gen_stmt(then_stmt);
+        printf("%s:\n", label_false);
+
+        free(label_true);
+        free(label_false);
+        return;
+    }
+
+    if (is_node(node, "IfElse")) {
+        ASTNode *cond = node->first_child;
+        ASTNode *then_stmt = cond != NULL ? cond->next_sibling : NULL;
+        ASTNode *else_stmt = then_stmt != NULL ? then_stmt->next_sibling : NULL;
+        char *label_true = new_label();
+        char *label_false = new_label();
+        char *label_end = new_label();
+
+        gen_cond(cond, label_true, label_false);
+        printf("%s:\n", label_true);
+        gen_stmt(then_stmt);
+        printf("    j %s\n", label_end);
+        printf("%s:\n", label_false);
+        gen_stmt(else_stmt);
+        printf("%s:\n", label_end);
+
+        free(label_true);
+        free(label_false);
+        free(label_end);
+        return;
+    }
+
+    if (is_node(node, "While")) {
+        ASTNode *cond = node->first_child;
+        ASTNode *body = cond != NULL ? cond->next_sibling : NULL;
+        char *label_begin = new_label();
+        char *label_true = new_label();
+        char *label_false = new_label();
+
+        printf("%s:\n", label_begin);
+        gen_cond(cond, label_true, label_false);
+        printf("%s:\n", label_true);
+        gen_stmt(body);
+        printf("    j %s\n", label_begin);
+        printf("%s:\n", label_false);
+
+        free(label_begin);
+        free(label_true);
+        free(label_false);
+        return;
+    }
+    
     printf("    # unsupported statement: %s\n", node->name);
 }
 
