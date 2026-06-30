@@ -7,15 +7,20 @@
 #include "parser.tab.h"
 
 static int comment_start_line = 0;
+static int unterminated_comment_reported = 0;
+
+int lexical_error_count = 0;
 
 static void print_error(const char *message, const char *lexeme) {
-    fprintf(stderr, "Lexical error at line %d: %s: %s\n",
-            yylineno, message, lexeme);
+    printf("Error type A at Line %d: %s %s.\n",
+           yylineno, message, lexeme);
+    lexical_error_count++;
 }
 
 static void print_error_at_line(int line, const char *message, const char *lexeme) {
-    fprintf(stderr, "Lexical error at line %d: %s: %s\n",
-            line, message, lexeme);
+    printf("Error type A at Line %d: %s %s.\n",
+           line, message, lexeme);
+    lexical_error_count++;
 }
 %}
 
@@ -33,10 +38,10 @@ BAD_HEX      0[xX][0-9A-Za-z_]*
 BAD_OCT      0[0-7]*[89]{DIGIT}*
 
 EXP          [eE][+-]?{DIGIT}+
-FLOAT_SIMPLE {DIGIT}+"."{DIGIT}+
-FLOAT_EXP_A  {DIGIT}+"."{DIGIT}*{EXP}
-FLOAT_EXP_B  {DIGIT}*"."{DIGIT}+{EXP}
-FLOAT_CONST  {FLOAT_SIMPLE}|{FLOAT_EXP_A}|{FLOAT_EXP_B}
+FLOAT_A      {DIGIT}+"."{DIGIT}*{EXP}?
+FLOAT_B      "."{DIGIT}+{EXP}?
+FLOAT_C      {DIGIT}+{EXP}
+FLOAT_CONST  {FLOAT_A}|{FLOAT_B}|{FLOAT_C}
 
 %%
 
@@ -44,14 +49,18 @@ FLOAT_CONST  {FLOAT_SIMPLE}|{FLOAT_EXP_A}|{FLOAT_EXP_B}
 
 "/*"                    {
                             comment_start_line = yylineno;
+                            unterminated_comment_reported = 0;
                             BEGIN(COMMENT);
                         }
 <COMMENT>"*/"           { BEGIN(INITIAL); }
 <COMMENT>\n             { /* yylineno is updated by flex */ }
 <COMMENT>.              { /* skip comment body */ }
 <COMMENT><<EOF>>        {
-                            print_error_at_line(comment_start_line,
-                                                "unterminated block comment", "/*");
+                            if (!unterminated_comment_reported) {
+                                print_error_at_line(comment_start_line,
+                                                    "unterminated block comment", "/*");
+                                unterminated_comment_reported = 1;
+                            }
                             return 0;
                         }
 
@@ -62,9 +71,13 @@ FLOAT_CONST  {FLOAT_SIMPLE}|{FLOAT_EXP_A}|{FLOAT_EXP_B}
 "if"                    { return IF; }
 "else"                  { return ELSE; }
 "while"                 { return WHILE; }
+"struct"                { return STRUCT; }
 
+
+{BAD_OCT}               { print_error("invalid octal integer", yytext); }
 {FLOAT_CONST}           { yylval.text = strdup(yytext); return FLOAT; }
 {HEX_INT}               { yylval.text = strdup(yytext); return INT; }
+{BAD_HEX}               { print_error("invalid hexadecimal integer", yytext); }
 {OCT_INT}               { yylval.text = strdup(yytext); return INT; }
 {DEC_INT}               { yylval.text = strdup(yytext); return INT; }
 
@@ -84,10 +97,10 @@ FLOAT_CONST  {FLOAT_SIMPLE}|{FLOAT_EXP_A}|{FLOAT_EXP_B}
                             yylval.text = strdup(yytext);
                             return RELOP;
                         }
-                        
+
 "&&"                    { return AND; }
 "||"                    { return OR; }
-"!"                     { return NOT; }                     
+"!"                     { return NOT; }
 
 "="                     { return ASSIGNOP; }
 
@@ -102,6 +115,7 @@ FLOAT_CONST  {FLOAT_SIMPLE}|{FLOAT_EXP_A}|{FLOAT_EXP_B}
 "]"                     { return RB; }
 "{"                     { return LC; }
 "}"                     { return RC; }
+"."                     { return DOT; }
 
 .                       { print_error("unknown character", yytext); }
 

@@ -5,11 +5,16 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "ast.h"
 #include "semantic.h"
 #include "ir.h"
 #include "mips.h"
 #include "optimize.h"
+
+static int project1_mode = 0;
+extern int lexical_error_count;
+static int syntax_error_count = 0;
 
 extern int yylex(void);
 extern int yylineno;
@@ -27,6 +32,25 @@ static void add_child(ASTNode *parent, ASTNode *child) {
     }
 }
 
+static char *make_struct_type_name(const char *name) {
+    size_t len;
+    char *type_name;
+
+    if (name == NULL) {
+        return NULL;
+    }
+
+    len = strlen("struct ") + strlen(name) + 1;
+    type_name = (char *)malloc(len);
+    if (type_name == NULL) {
+        fprintf(stderr, "Out of memory\n");
+        exit(1);
+    }
+
+    snprintf(type_name, len, "struct %s", name);
+    return type_name;
+}
+
 void yyerror(const char *msg);
 %}
 
@@ -36,13 +60,14 @@ void yyerror(const char *msg);
 }
 
 %token <text> TYPE ID INT FLOAT RELOP
-%token RETURN IF ELSE WHILE
+%token RETURN IF ELSE WHILE STRUCT
 %token LP RP LB RB LC RC SEMI COMMA
 %token ASSIGNOP
 %token PLUS MINUS STAR DIV
-%token AND OR NOT
+%token AND OR NOT DOT
 
-%type <node> program function_list function
+%type <node> program ext_def_list ext_def function struct_def
+%type <node> type_specifier
 %type <node> param_list_opt param_list param
 %type <node> compound_stmt block_items block_item
 %type <node> declaration declarator_list declarator
@@ -51,56 +76,109 @@ void yyerror(const char *msg);
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
+%nonassoc STRUCT_TYPE
+%right ASSIGNOP
 %left OR
 %left AND
 %right NOT
 %left RELOP
 %left PLUS MINUS
 %left STAR DIV
+%left DOT
+%left LB RB
 
 %%
 
 program
-    : function_list
+    : ext_def_list
       {
           root = new_node("Program", NULL);
-	  add_child(root, $1);
-	  
-	  if (semantic_analyze(root) == 0) {
-    optimize_ast(root);
-    ast_print(root, 0);
-    ir_generate(root);
-    mips_generate(root);
-}
-		
-	  ast_free(root);
+          add_child(root, $1);
+
+          if (project1_mode) {
+              if (lexical_error_count == 0 && syntax_error_count == 0) {
+                  ast_print_project1(root, 0);
+              }
+          } else {
+              if (semantic_analyze(root) == 0) {
+                  optimize_ast(root);
+                  ast_print(root, 0);
+                  ir_generate(root);
+                  mips_generate(root);
+              }
+          }
+
+          ast_free(root);
       }
     ;
 
-function_list
-    : function
+ext_def_list
+    : ext_def
       {
           $$ = new_node("FunctionList", NULL);
           add_child($$, $1);
       }
-    | function_list function
+    | ext_def_list ext_def
       {
           $$ = $1;
           add_child($$, $2);
       }
     ;
 
+ext_def
+    : function
+      {
+          $$ = $1;
+      }
+    | struct_def
+      {
+          $$ = $1;
+      }
+    ;
+
+struct_def
+    : STRUCT ID LC block_items RC SEMI
+      {
+          $$ = new_node("StructDef", $2);
+          add_child($$, $4);
+
+          free($2);
+      }
+    | STRUCT ID LC error RC SEMI
+      {
+          yyerrok;
+          $$ = NULL;
+          free($2);
+      }
+    ;
+
+type_specifier
+    : TYPE
+      {
+          $$ = new_node("Type", $1);
+          free($1);
+      }
+      | STRUCT ID %prec STRUCT_TYPE
+      {
+          char *type_name = make_struct_type_name($2);
+          $$ = new_node("Type", type_name);
+
+          free(type_name);
+          free($2);
+      }
+    ;
+
 function
-    : TYPE ID LP param_list_opt RP compound_stmt
+    : type_specifier ID LP param_list_opt RP compound_stmt
       {
           $$ = new_node("Function", $2);
 
-          ASTNode *ret_type = new_node("ReturnType", $1);
+          ASTNode *ret_type = new_node("ReturnType", $1 != NULL ? $1->value : NULL);
           add_child($$, ret_type);
           add_child($$, $4);
           add_child($$, $6);
 
-          free($1);
+          ast_free($1);
           free($2);
       }
     ;
@@ -130,12 +208,11 @@ param_list
     ;
 
 param
-    : TYPE ID
+    : type_specifier ID
       {
           $$ = new_node("Param", $2);
-          add_child($$, new_node("Type", $1));
+          add_child($$, $1);
 
-          free($1);
           free($2);
       }
     ;
@@ -172,13 +249,17 @@ block_item
     ;
 
 declaration
-    : TYPE declarator_list SEMI
+    : type_specifier declarator_list SEMI
       {
           $$ = new_node("Declaration", NULL);
-          add_child($$, new_node("Type", $1));
+          add_child($$, $1);
           add_child($$, $2);
-
-          free($1);
+      }
+    | type_specifier error SEMI
+      {
+          yyerrok;
+          ast_free($1);
+          $$ = NULL;
       }
     ;
 
@@ -226,11 +307,21 @@ stmt
           $$ = new_node("Return", NULL);
           add_child($$, $2);
       }
+    | RETURN error SEMI
+      {
+          yyerrok;
+          $$ = NULL;
+      }
     | lvalue ASSIGNOP expr SEMI
       {
           $$ = new_node("Assign", NULL);
           add_child($$, $1);
           add_child($$, $3);
+      }
+    | lvalue ASSIGNOP error SEMI
+      {
+          yyerrok;
+          $$ = NULL;
       }
     | compound_stmt
       {
@@ -255,6 +346,11 @@ stmt
           add_child($$, $3);
           add_child($$, $5);
       }
+    | error SEMI
+      {
+          yyerrok;
+          $$ = NULL;
+      }
     ;
 
 lvalue
@@ -269,6 +365,14 @@ lvalue
           add_child($$, $3);
 
           free($1);
+      }
+    | ID DOT ID
+      {
+          $$ = new_node("MemberAccess", $1);
+          add_child($$, new_node("Field", $3));
+
+          free($1);
+          free($3);
       }
     ;
 
@@ -376,21 +480,46 @@ arg_list
 %%
 
 void yyerror(const char *msg) {
-    fprintf(stderr, "Syntax error at line %d: %s\n", yylineno, msg);
+    if (lexical_error_count > 0) {
+        return;
+    }
+
+    printf("Error type B at Line %d: syntax error.\n", yylineno);
+    syntax_error_count++;
 }
 
 int main(int argc, char **argv) {
+    const char *input_file = NULL;
+
     if (argc > 1) {
-        yyin = fopen(argv[1], "r");
+        if (strcmp(argv[1], "--project1") == 0) {
+            project1_mode = 1;
+
+            if (argc > 2) {
+                input_file = argv[2];
+            }
+        } else {
+            input_file = argv[1];
+        }
+    }
+
+    if (input_file != NULL) {
+        yyin = fopen(input_file, "r");
         if (yyin == NULL) {
-            perror(argv[1]);
+            perror(input_file);
             return 1;
         }
     }
 
     int result = yyparse();
 
-    if (argc > 1) {
+    if (project1_mode && lexical_error_count > 0) {
+        while (yylex() != 0) {
+            /* continue scanning remaining tokens */
+        }
+    }
+
+    if (input_file != NULL) {
         fclose(yyin);
     }
 
