@@ -1,0 +1,23 @@
+struct Pair
+{
+    int left;
+    int right;
+};
+
+int sum(struct Pair p)
+{
+    return p.left + p.right;
+}
+
+int main()
+{
+    struct Pair p;
+    int result;
+
+    p.left = 1;
+    p.right = 2.5;
+    result = sum(p, 3);
+    missing = result;
+
+    return result;
+}

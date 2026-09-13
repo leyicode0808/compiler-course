@@ -1,0 +1,51 @@
+int factorial(int n)
+{
+    if (n <= 1)
+    {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+int distance(int a, int b)
+{
+    if (a < b)
+    {
+        return b - a;
+    }
+    return a - b;
+}
+
+int main()
+{
+    int data[10];
+    int n;
+    int i;
+    int total;
+    int best;
+    int fact;
+    n = read();
+    i = 0;
+    while (i < n)
+    {
+        data[i] = read();
+        i = i + 1;
+    }
+    i = 0;
+    total = 0;
+    best = data[0];
+    while (i < n)
+    {
+        total = total + data[i];
+        if (best < data[i])
+        {
+            best = data[i];
+        }
+        i = i + 1;
+    }
+    fact = factorial(n);
+    write(total);
+    write(best);
+    write(distance(total, fact));
+    return 0;
+}

@@ -1,0 +1,25 @@
+struct Pair {
+    int left;
+    int right;
+};
+
+int add(int a, int b) {
+    return a + b;
+}
+
+int main() {
+    int result;
+    struct Pair p;
+
+    p.left = 10;
+    p.right = 20;
+    result = add(p.left, p.right);
+
+    if (result > 20) {
+        write(result);
+    } else {
+        write(0);
+    }
+
+    return 0;
+}

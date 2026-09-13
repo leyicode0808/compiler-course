@@ -1,0 +1,52 @@
+proj2：实践二，语义分析与符号表设计实现。
+
+本目录可以单独运行。进入当前目录后执行命令即可，不依赖 submission 顶层源码。
+
+目录说明：
+  src/       实践二源码，包含词法、语法、AST 和语义分析
+  test/      Project_2.pdf 中公开样例整理成的 .cmm 文件，以及手写样例
+  tools/     演示脚本，负责运行样例并打印结果
+  docs/      实践说明和实践二报告
+  course/    Project_2.pdf、Appendix.pdf 和课程测试压缩包
+  Makefile   实践二构建与演示入口
+
+主要源码：
+  src/semantic.c, src/semantic.h  类型系统、符号表、结构体表、函数表、作用域和语义检查
+  src/parser_main.c               实践二入口，CMM_SEMANTIC=1 时执行语义分析
+  src/parser.y, src/lexer.l        语义分析依赖的语法树前端
+  src/ast.c, src/ast.h             AST 数据结构、打印和释放
+
+环境检查：
+  make check-env
+
+构建：
+  make semantic
+
+查看语义分析结果：
+  make semantic-demo
+
+该命令会运行以下 Project_2.pdf 公开样例并直接打印输出：
+  test/proj2-3-3-6-exp1-1.cmm      3.3.6 必做样例 1，未定义变量
+  test/proj2-3-3-6-exp2-1.cmm      3.3.6 必做样例 2，未定义函数
+  test/proj2-3-3-6-exp3-1.cmm      3.3.6 必做样例 3，变量重定义
+  test/proj2-3-3-6-exp5-1.cmm      3.3.6 必做样例 5，赋值类型不匹配
+  test/proj2-3-3-6-exp8-1.cmm      3.3.6 必做样例 8，返回类型不匹配
+  test/proj2-3-3-6-exp14-1.cmm     3.3.6 必做样例 14，访问不存在的结构体域
+  test/proj2-3-3-6-exp17-1.cmm     3.3.6 必做样例 17，使用未定义结构体
+  test/proj2-3-3-7-exp1-0.cmm      3.3.7 选做样例 1，函数声明与定义
+  test/proj2-3-3-7-exp2-0.cmm      3.3.7 选做样例 2，函数声明不一致
+  test/proj2-3-3-7-exp3-0.cmm      3.3.7 选做样例 3，嵌套作用域
+  test/proj2-3-3-7-exp4-0.cmm      3.3.7 选做样例 4，同一作用域变量重定义
+
+也可以手动指定文件：
+  CMM_SEMANTIC=1 build/cmmc test/proj2-test1.cmm
+
+完整演示：
+  make demo
+
+清理构建产物：
+  make clean
+
+验收说明：
+  当前目录的脚本用于“运行并查看结果”，不是逐字 diff 的自动评分脚本。演示时可打开
+  course/Project_2.pdf 对照 3.3.6 和 3.3.7 的公开样例，查看输出是否符合语义错误格式要求。

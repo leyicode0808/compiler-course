@@ -1,9 +1,46 @@
-build/
-day1-flex/lex.yy.c
-day1-flex/lexer
-*.o
-*.out
-# Temporary AST attempt backups
+# Environment and local metadata
+/.agents/
+/.codex/
+/.vcs/
 
-backups/*ast_attempt*
-backups/parser.ast_minimal.y
+# Build outputs
+/build/
+/out/
+/dist/
+*.o
+*.obj
+*.a
+*.so
+*.dll
+*.exe
+*.out
+*.bin
+
+# Flex/Bison generated files
+lex.yy.c
+*.tab.c
+*.tab.h
+*.output
+
+# Generated compiler outputs
+*.ir
+*.s
+*.asm
+*.tokens
+*.ast
+*.log
+
+# Extracted reference/test archives
+**/Tests/
+**/irsim/
+**/cmmc_optimizer-main/
+**/C/
+/tests/project*/
+
+# Office/editor temporary files
+~$*
+*.tmp
+*.bak
+*.swp
+*.swo
+.DS_Store

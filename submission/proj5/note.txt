@@ -1,0 +1,28 @@
+proj5：实践五材料，中间代码优化。
+
+主要源码：
+  src/iropt.c, src/iropt.h        IR 优化器实现
+  src/iropt_main.c                优化器命令行入口
+  src/irgen.c, src/irgen.h        前置实践的 IR 生成模块，保留作代码上下文
+  src/mipsgen.c, src/mipsgen.h    前置实践的目标代码模块，保留作代码上下文
+
+测试与脚本：
+  test/                           当前实践五验收样例
+  tools/run_opt_tests.sh          批量优化并可用 IRSim 比较优化前后输出
+  tools/build_irsim_image.sh      构建 IRSim Docker 镜像
+  Makefile                        提供 make opt、make opt-demo、make opt-test
+
+常用指令：
+  make opt
+  nl -ba test/proj5-test1.ir
+  build/cmm-opt test/proj5-test1.ir /tmp/proj5-test1.opt.ir
+  sed -n '1,160p' /tmp/proj5-test1.opt.ir
+  diff -u test/proj5-test1.ir /tmp/proj5-test1.opt.ir
+  make opt-demo
+  make opt-test
+
+文档：
+  docs/practice5-opt.md           实践五实现说明
+  docs/practice5-opt-report.md    实践五报告 Markdown
+  docs/practice5-opt-report.docx  实践五报告 Word 版
+  course/                         Project_5.pdf、Appendix.pdf、IRSim 包和参考优化器压缩包

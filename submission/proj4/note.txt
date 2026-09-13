@@ -1,0 +1,48 @@
+proj4：实践四，MIPS32 目标代码生成。
+
+本目录可以单独运行。进入当前目录后执行命令即可，不依赖 submission 顶层源码。
+
+目录说明：
+  src/       实践四源码，包含词法、语法、AST、语义分析、IR 生成和 MIPS 生成
+  test/      Project_4.pdf 中公开样例整理成的 .cmm 文件，以及手写样例
+  tools/     演示脚本，负责生成汇编并调用 SPIM 打印运行结果
+  docs/      实践说明和实践四报告
+  course/    Project_4.pdf、MIPS32_and_SPIM.pdf 和 Appendix.pdf 原始资料
+  Makefile   实践四构建与演示入口
+
+主要源码：
+  src/mipsgen.c, src/mipsgen.h    IR 到 MIPS32 汇编的后端
+  src/irgen.c, src/irgen.h        目标代码生成前的 IR 生成
+  src/semantic.c, src/semantic.h  目标代码生成前的语义检查
+  src/parser_main.c               实践四入口，两参数时生成 MIPS
+  src/parser.y, src/lexer.l        前端依赖
+
+环境检查：
+  make check-env
+
+构建：
+  make mips
+
+查看 MIPS 生成和 SPIM 运行结果：
+  make mips-demo
+
+该命令会运行以下 Project_4.pdf 公开样例并直接打印汇编和 SPIM 输出：
+  test/proj4-5-3-6-exp1-1.cmm      5.3.6 必做样例 1，Fibonacci 数列
+  test/proj4-5-3-6-exp2-1.cmm      5.3.6 必做样例 2，递归阶乘
+  test/proj4-test1.cmm             手写样例，循环和函数调用
+
+也可以手动查看手写样例源码、生成 MIPS 汇编并运行：
+  nl -ba test/proj4-test1.cmm
+  build/cmmc test/proj4-test1.cmm /tmp/proj4-test1.s
+  sed -n '1,160p' /tmp/proj4-test1.s
+  spim -quiet -file /tmp/proj4-test1.s
+
+完整演示：
+  make demo
+
+清理构建产物：
+  make clean
+
+验收说明：
+  当前目录的脚本用于“生成汇编并查看 SPIM 输出”，不是逐字 diff 的自动评分脚本。演示时可打开
+  course/Project_4.pdf 对照 5.3.6 的公开样例，查看生成的 MIPS32 汇编是否能在 SPIM 中正确运行。

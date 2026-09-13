@@ -1,0 +1,59 @@
+proj1：实践一，Flex 词法分析与 Bison 语法分析。
+
+本目录可以单独运行。进入当前目录后执行命令即可，不依赖 submission 顶层源码。
+
+目录说明：
+  src/       实践一源码，只包含词法、语法和 AST 打印相关文件
+  test/      Project_1.pdf 中公开样例整理成的 .cmm 文件
+  tools/     演示脚本，负责运行样例并打印结果
+  docs/      实践说明、报告草稿和 C-- 文法说明
+  course/    Project_1.pdf 和 Appendix.pdf 原始课程资料
+  Makefile   实践一构建与演示入口
+
+主要源码：
+  src/lexer.l              Flex 词法规则，识别 token、注释、错误字符和扩展数值形式
+  src/lexer_main.c         独立词法分析入口，可用 CMM_LEX_DUMP=1 打印 token 流
+  src/token.h              独立 lexer 模式使用的 token 枚举
+  src/parser.y             Bison 语法规则、优先级、错误恢复和 AST 构造动作
+  src/parser_main.c        实践一语法分析入口，正确程序输出语法树
+  src/ast.c, src/ast.h     AST 节点创建、释放和先序打印
+
+环境检查：
+  make check-env
+
+构建：
+  make lexer
+  make parser
+
+查看词法分析结果：
+  make lexer-demo
+
+该命令会运行以下 Project_1.pdf 公开样例并直接打印输出：
+  test/proj1-2-3-6-exp1-1.cmm         2.3.6 必做样例 1，未定义字符 ~
+  test/proj1-2-3-7-exp1-0.cmm         2.3.7 选做样例 1，八进制和十六进制整数
+  test/proj1-2-3-7-exp5-0.cmm         2.3.7 选做样例 5，行注释和块注释
+
+也可以手动指定文件：
+  CMM_LEX_DUMP=1 build/cmm-lexer test/proj1-2-3-7-exp1-0.cmm
+
+查看语法分析结果：
+  make parser-demo
+
+该命令会运行以下 Project_1.pdf 公开样例并直接打印输出：
+  test/proj1-2-3-6-exp2-1.cmm         2.3.6 必做样例 2，数组访问和 if-else 语法错误
+  test/proj1-2-3-6-exp3-1.cmm         2.3.6 必做样例 3，正确程序语法树
+  test/proj1-2-3-6-exp4-1.cmm         2.3.6 必做样例 4，结构体相关语法树
+
+也可以手动指定文件：
+  build/cmmc test/proj1-2-3-6-exp3-1.cmm
+
+完整演示：
+  make demo
+
+清理构建产物：
+  make clean
+
+验收说明：
+  当前目录的脚本用于“运行并查看结果”，不是逐字 diff 的自动评分脚本。演示时可打开
+  course/Project_1.pdf 对照 2.3.6 和 2.3.7 的公开样例，查看输出是否符合词法错误、
+  语法错误或语法树格式要求。

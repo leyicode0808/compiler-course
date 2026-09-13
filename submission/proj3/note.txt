@@ -1,0 +1,56 @@
+proj3：实践三，中间代码生成。
+
+本目录可以单独运行。进入当前目录后执行命令即可，不依赖 submission 顶层源码。
+
+目录说明：
+  src/       实践三源码，包含词法、语法、AST、语义分析和 IR 生成
+  test/      Project_3.pdf 中公开样例整理成的 .cmm 文件，以及手写样例
+  tools/     演示脚本，负责运行样例并打印生成的 IR
+  docs/      实践说明和实践三报告
+  course/    Project_3.pdf、Appendix.pdf、Tests_3.zip 和 IRSim 原始资料
+  Makefile   实践三构建与演示入口
+
+主要源码：
+  src/irgen.c, src/irgen.h        AST 到三地址 IR 的翻译
+  src/semantic.c, src/semantic.h  IR 生成前的语义检查
+  src/parser_main.c               实践三入口，CMM_IR=1 时生成 IR
+  src/parser.y, src/lexer.l        前端依赖
+  src/ast.c, src/ast.h             AST 数据结构
+
+环境检查：
+  make check-env
+
+构建：
+  make ir
+
+查看 IR 生成结果：
+  make ir-demo
+
+使用 IRSim 批量验证：
+  make irsim-test
+
+使用 IRSim 单独验证手写样例：
+  ./tools/run_one_irsim_case.sh proj3-test1
+
+该命令会运行以下 Project_3.pdf 公开样例并直接打印生成的 IR：
+  test/proj3-4-3-6-exp1-1.cmm      4.3.6 必做样例 1，符号函数
+  test/proj3-4-3-6-exp2-1.cmm      4.3.6 必做样例 2，递归阶乘
+  test/proj3-4-3-7-exp1-0.cmm      4.3.7 选做样例 1，结构体变量和结构体参数
+  test/proj3-4-3-7-exp2-0.cmm      4.3.7 选做样例 2，一维数组参数和二维数组
+  test/proj3-test1.cmm             手写样例，循环和函数调用
+
+也可以手动指定文件：
+  CMM_IR=1 build/cmmc test/proj3-test1.cmm /tmp/proj3-test1.ir
+
+如果本机缺少 IRSim Docker 镜像，可先执行：
+  ./tools/build_irsim_image.sh
+
+完整演示：
+  make demo
+
+清理构建产物：
+  make clean
+
+验收说明：
+  当前目录的脚本用于“生成并查看 IR”，不是逐字 diff 的自动评分脚本。演示时可打开
+  course/Project_3.pdf 对照 4.3.6 和 4.3.7 的公开样例，查看生成的三地址代码是否符合中间代码格式要求。
